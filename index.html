@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skibidi Productions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0f7fa;
+            scroll-behavior: smooth; /* Smooth scrolling */
+        }
+        header {
+            background-color: #00796b;
+            color: #fff;
+            padding: 20px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            animation: slide-down 1s ease-out;
+        }
+        nav {
+            margin: 10px 0;
+            text-align: center;
+            background-color: #e0f7fa;
+            position: sticky;
+            top: 60px; /* Adjust to account for the header height */
+            z-index: 999;
+        }
+        nav a {
+            margin: 0 15px;
+            color: #00796b;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+        nav a:hover {
+            color: #004d40;
+        }
+        section {
+            padding: 20px;
+            text-align: center;
+        }
+        footer {
+            background-color: #00796b;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0; /* Smaller padding for footer */
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .description {
+            margin: 20px 0;
+            color: #004d40;
+            animation: fade-in 2s;
+        }
+        .image {
+            width: 80%;
+            margin: 10px 0;
+            border-radius: 10px;
+            animation: zoom-in 1s ease-in-out;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 10px;
+            color: white;
+            background-color: #00796b;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            animation: fade-in 3s;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #004d40;
+        }
+        /* Custom scrollbar styles */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f7fa;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00796b;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #004d40;
+        }
+        /* Animations */
+        @keyframes slide-down {
+            from {
+                transform: translateY(-100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes zoom-in {
+            from {
+                transform: scale(0.8);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Skibidi Productions</h1>
+    </header>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="https://sites.google.com/ptaa.org/skibidigames/home?authuser=1" target="_blank">Skibidi Games</a>
+    </nav>
+    <section id="home">
+        <h2>Home</h2>
+        <img src="https://via.placeholder.com/800x400" alt="Home Image" class="image">
+        <p class="description">Welcome to Skibidi Productions, where creativity meets innovation. We specialize in producing top-notch content that entertains and inspires.</p>
+        <audio autoplay loop>
+            <source src="background-music.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </section>
+    <footer>
+        <p>&copy; 2025 Skibidi Productions. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+
