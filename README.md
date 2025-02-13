@@ -1,1 +1,2 @@
-# skibidi-productions.github.io
+## skibidiproductions
+a product company working for the greater good
