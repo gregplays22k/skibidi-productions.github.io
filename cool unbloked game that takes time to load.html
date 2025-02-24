@@ -16,8 +16,19 @@
        #content {
            font-size: 2em;
            margin-bottom: 20px;
-       }
-       #gameStatus {
+      }
+       
+      }
+        nav {
+            margin: 10px 0;
+            text-align: center;
+            background-color: #e0f7fa;
+            position: sticky;
+            top: 60px; /* Adjust to account for the header height */
+            z-index: 999;
+        }
+      
+      #gameStatus {
            font-weight: bold;
            color: #333;
        }
@@ -117,28 +128,7 @@
    <div id="content">Lag Points: 0</div>
    <p id="gameStatus">Collect 1000 more lag points to play.</p>
 </body>
+   <nav>
+      
+   </nav>
 </html>
-
-Changes and Improvements:
-1. Renamed Variables:
-   * dotCount is changed to lagPoints for clarity.
-2. Improved UI:
-   * Added basic CSS for better readability and visual appeal.
-   * Changed the "Toggle Lag" button style to indicate lagging status.
-   * Changed the cursor of the game status text when the player has enough lag points.
-3. Game Logic:
-   * Added a gameActive flag to track if the game is running.
-   * When lagPoints reach 1000, the "Game Status" message becomes clickable.
-   * Clicking the message starts the startGame() function.
-   * startGame() sets gameActive to true and starts a setInterval that calls decreaseLagPoints() every 0.5 seconds.
-   * The game ends when the lag points reach 0.
-   * The game status text is updated to inform the player of the game's state.
-   * The onclick event is removed from the game status text when it is no longer clickable.
-4. Clearer Messages:
-   * Updated messages to be more user-friendly and informative.
-5. Game Over:
-   * The game now has a game over state.
-6. Cursor change:
-   * The cursor changes to a pointer when the game status text is clickable.
-7. Game status onclick removal:
-   * The onclick event is removed from the game status text when it is no longer clickable.
