@@ -1,0 +1,144 @@
+﻿HTML
+
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Lag Point Game</title>
+   <style>
+       body {
+           font-family: sans-serif;
+           text-align: center;
+           padding: 50px;
+       }
+       #content {
+           font-size: 2em;
+           margin-bottom: 20px;
+       }
+       #gameStatus {
+           font-weight: bold;
+           color: #333;
+       }
+       #lagButton {
+           padding: 10px 20px;
+           font-size: 1em;
+           background-color: #4CAF50;
+           color: white;
+           border: none;
+           cursor: pointer;
+           margin-bottom: 10px;
+       }
+       #lagButton.lagging {
+           background-color: #f44336;
+       }
+       #status {
+           margin-bottom: 10px;
+       }
+   </style>
+   <script>
+       let isLagging = false;
+       let lagPoints = 0;
+       let gameActive = false;
+       let gameInterval;
+
+       function toggleLag() {
+           isLagging = !isLagging;
+           document.getElementById("status").innerText = isLagging ? "Lagging..." : "Normal";
+           document.getElementById("lagButton").classList.toggle("lagging", isLagging);
+           preventSwitchingTabs(); // Update the tab switching prevention when lag toggles
+       }
+
+       function addLagPoint() {
+           lagPoints++;
+           updateDisplay();
+           if (lagPoints >= 1000 && !gameActive) {
+               document.getElementById("gameStatus").innerText = "You have enough lag points to play! Click to start the game.";
+               document.getElementById("gameStatus").style.cursor = "pointer";
+               document.getElementById("gameStatus").onclick = startGame;
+           } else if (lagPoints < 1000){
+             document.getElementById("gameStatus").onclick = null;
+             document.getElementById("gameStatus").style.cursor = "default";
+           }
+       }
+
+       function updateDisplay() {
+           document.getElementById("content").innerText = "Lag Points: " + lagPoints;
+           if (lagPoints < 1000) {
+               document.getElementById("gameStatus").innerText = "Collect " + (1000 - lagPoints) + " more lag points to play.";
+           }
+       }
+
+       function preventSwitchingTabs() {
+           if (isLagging) {
+               window.onblur = function () {
+                   setTimeout(function () {
+                       window.focus();
+                   }, 100);
+               };
+           } else {
+               window.onblur = null;
+           }
+       }
+
+       function startGame() {
+           if (lagPoints >= 1000) {
+               gameActive = true;
+               document.getElementById("gameStatus").innerText = "Game Started! Lag Points are now decreasing.";
+               document.getElementById("gameStatus").onclick = null;
+               document.getElementById("gameStatus").style.cursor = "default";
+               gameInterval = setInterval(decreaseLagPoints, 500); // Decrease lag points faster in game
+           }
+       }
+
+       function decreaseLagPoints() {
+           lagPoints--;
+           if (lagPoints <= 0) {
+               lagPoints = 0;
+               clearInterval(gameInterval);
+               gameActive = false;
+               document.getElementById("gameStatus").innerText = "Game Over! Collect 1000 more lag points to play.";
+               updateDisplay();
+               document.getElementById("gameStatus").onclick = null;
+               document.getElementById("gameStatus").style.cursor = "default";
+           }
+           updateDisplay();
+       }
+
+       setInterval(addLagPoint, 1000); // Add one lag point per second
+       setInterval(preventSwitchingTabs, 1000); // Check and enforce tab switching prevention
+   </script>
+</head>
+<body>
+   <h1>Lag Point Game</h1>
+   <button id="lagButton" onclick="toggleLag()">Toggle Lag</button>
+   <p id="status">Normal</p>
+   <div id="content">Lag Points: 0</div>
+   <p id="gameStatus">Collect 1000 more lag points to play.</p>
+</body>
+</html>
+
+Changes and Improvements:
+1. Renamed Variables:
+   * dotCount is changed to lagPoints for clarity.
+2. Improved UI:
+   * Added basic CSS for better readability and visual appeal.
+   * Changed the "Toggle Lag" button style to indicate lagging status.
+   * Changed the cursor of the game status text when the player has enough lag points.
+3. Game Logic:
+   * Added a gameActive flag to track if the game is running.
+   * When lagPoints reach 1000, the "Game Status" message becomes clickable.
+   * Clicking the message starts the startGame() function.
+   * startGame() sets gameActive to true and starts a setInterval that calls decreaseLagPoints() every 0.5 seconds.
+   * The game ends when the lag points reach 0.
+   * The game status text is updated to inform the player of the game's state.
+   * The onclick event is removed from the game status text when it is no longer clickable.
+4. Clearer Messages:
+   * Updated messages to be more user-friendly and informative.
+5. Game Over:
+   * The game now has a game over state.
+6. Cursor change:
+   * The cursor changes to a pointer when the game status text is clickable.
+7. Game status onclick removal:
+   * The onclick event is removed from the game status text when it is no longer clickable.
