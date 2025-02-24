@@ -1,33 +1,25 @@
-﻿HTML
-
-
-
-
 <!DOCTYPE html>
 <html>
 <head>
-   <title>Lag Point Game</title>
-   <style>
-       body {
-           font-family: sans-serif;
-           text-align: center;
-           padding: 50px;
-       }
-       #content {
-           font-size: 2em;
-           margin-bottom: 20px;
-      }
-       
-      }
+    <title>Lag Point Game</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        #content {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
         nav {
             margin: 10px 0;
             text-align: center;
             background-color: #e0f7fa;
             position: sticky;
-            top: 60px; /* Adjust to account for the header height */
+            top: 0; /* Adjust to account for the header height */
             z-index: 999;
         }
-      }
         nav a {
             margin: 0 15px;
             color: #00796b;
@@ -38,113 +30,112 @@
         nav a:hover {
             color: #004d40;
         }
-      
-      #gameStatus {
-           font-weight: bold;
-           color: #333;
-       }
-       #lagButton {
-           padding: 10px 20px;
-           font-size: 1em;
-           background-color: #4CAF50;
-           color: white;
-           border: none;
-           cursor: pointer;
-           margin-bottom: 10px;
-       }
-       #lagButton.lagging {
-           background-color: #f44336;
-       }
-       #status {
-           margin-bottom: 10px;
-       }
-   </style>
-   <script>
-       let isLagging = false;
-       let lagPoints = 0;
-       let gameActive = false;
-       let gameInterval;
+        #gameStatus {
+            font-weight: bold;
+            color: #333;
+        }
+        #lagButton {
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        #lagButton.lagging {
+            background-color: #f44336;
+        }
+        #status {
+            margin-bottom: 10px;
+        }
+    </style>
+    <script>
+        let isLagging = false;
+        let lagPoints = 0;
+        let gameActive = false;
+        let gameInterval;
 
-       function toggleLag() {
-           isLagging = !isLagging;
-           document.getElementById("status").innerText = isLagging ? "Lagging..." : "Normal";
-           document.getElementById("lagButton").classList.toggle("lagging", isLagging);
-           preventSwitchingTabs(); // Update the tab switching prevention when lag toggles
-       }
+        function toggleLag() {
+            isLagging = !isLagging;
+            document.getElementById("status").innerText = isLagging ? "Lagging..." : "Normal";
+            document.getElementById("lagButton").classList.toggle("lagging", isLagging);
+            preventSwitchingTabs(); // Update the tab switching prevention when lag toggles
+        }
 
-       function addLagPoint() {
-           lagPoints++;
-           updateDisplay();
-           if (lagPoints >= 1000 && !gameActive) {
-               document.getElementById("gameStatus").innerText = "You have enough lag points to play! Click to start the game.";
-               document.getElementById("gameStatus").style.cursor = "pointer";
-               document.getElementById("gameStatus").onclick = startGame;
-           } else if (lagPoints < 1000){
-             document.getElementById("gameStatus").onclick = null;
-             document.getElementById("gameStatus").style.cursor = "default";
-           }
-       }
+        function addLagPoint() {
+            lagPoints++;
+            updateDisplay();
+            if (lagPoints >= 1000 && !gameActive) {
+                document.getElementById("gameStatus").innerText = "You have enough lag points to play! Click to start the game.";
+                document.getElementById("gameStatus").style.cursor = "pointer";
+                document.getElementById("gameStatus").onclick = startGame;
+            } else if (lagPoints < 1000){
+                document.getElementById("gameStatus").onclick = null;
+                document.getElementById("gameStatus").style.cursor = "default";
+            }
+        }
 
-       function updateDisplay() {
-           document.getElementById("content").innerText = "Lag Points: " + lagPoints;
-           if (lagPoints < 1000) {
-               document.getElementById("gameStatus").innerText = "Collect " + (1000 - lagPoints) + " more lag points to play.";
-           }
-       }
+        function updateDisplay() {
+            document.getElementById("content").innerText = "Lag Points: " + lagPoints;
+            if (lagPoints < 1000) {
+                document.getElementById("gameStatus").innerText = "Collect " + (1000 - lagPoints) + " more lag points to play.";
+            }
+        }
 
-       function preventSwitchingTabs() {
-           if (isLagging) {
-               window.onblur = function () {
-                   setTimeout(function () {
-                       window.focus();
-                   }, 100);
-               };
-           } else {
-               window.onblur = null;
-           }
-       }
+        function preventSwitchingTabs() {
+            if (isLagging) {
+                window.onblur = function () {
+                    setTimeout(function () {
+                        window.focus();
+                    }, 100);
+                };
+            } else {
+                window.onblur = null;
+            }
+        }
 
-       function startGame() {
-           if (lagPoints >= 1000) {
-               gameActive = true;
-               document.getElementById("gameStatus").innerText = "Game Started! Lag Points are now decreasing.";
-               document.getElementById("gameStatus").onclick = null;
-               document.getElementById("gameStatus").style.cursor = "default";
-               gameInterval = setInterval(decreaseLagPoints, 500); // Decrease lag points faster in game
-           }
-       }
+        function startGame() {
+            if (lagPoints >= 1000) {
+                gameActive = true;
+                document.getElementById("gameStatus").innerText = "Game Started! Lag Points are now decreasing.";
+                document.getElementById("gameStatus").onclick = null;
+                document.getElementById("gameStatus").style.cursor = "default";
+                gameInterval = setInterval(decreaseLagPoints, 1000); // Decrease lag points every second in game
+            }
+        }
 
-       function decreaseLagPoints() {
-           lagPoints--;
-           if (lagPoints <= 0) {
-               lagPoints = 0;
-               clearInterval(gameInterval);
-               gameActive = false;
-               document.getElementById("gameStatus").innerText = "Game Over! Collect 1000 more lag points to play.";
-               updateDisplay();
-               document.getElementById("gameStatus").onclick = null;
-               document.getElementById("gameStatus").style.cursor = "default";
-           }
-           updateDisplay();
-       }
+        function decreaseLagPoints() {
+            lagPoints--;
+            if (lagPoints <= 0) {
+                lagPoints = 0;
+                clearInterval(gameInterval);
+                gameActive = false;
+                document.getElementById("gameStatus").innerText = "Game Over! Collect 1000 more lag points to play.";
+                updateDisplay();
+                document.getElementById("gameStatus").onclick = null;
+                document.getElementById("gameStatus").style.cursor = "default";
+            }
+            updateDisplay();
+        }
 
-       setInterval(addLagPoint, 1000); // Add one lag point per second
-       setInterval(preventSwitchingTabs, 1000); // Check and enforce tab switching prevention
-   </script>
+        setInterval(addLagPoint, 1000); // Add one lag point per second
+        setInterval(preventSwitchingTabs, 1000); // Check and enforce tab switching prevention
+    </script>
 </head>
- <nav>
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="contact.html">Contact</a>
-        <a href="https://sites.google.com/ptaa.org/skibidigames/home" target="_blank">Skibidi Games</a>
-         <a href="cool unbloked game that takes time to load.html">Cool game that takes time to load</a>
-    </nav>
+<nav>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="https://sites.google.com/ptaa.org/skibidigames/home" target="_blank">Skibidi Games</a>
+    <a href="cool unbloked game that takes time to load.html">Cool game that takes time to load</a>
+</nav>
 
 <body>
-   <h1>Lag Point Game</h1>
-   <button id="lagButton" onclick="toggleLag()">Toggle Lag</button>
-   <p id="status">Normal</p>
-   <div id="content">Lag Points: 0</div>
-   <p id="gameStatus">Collect 1000 more lag points to play.</p>
+    <h1>Lag Point Game</h1>
+    <button id="lagButton" onclick="toggleLag()">Toggle Lag</button>
+    <p id="status">Normal</p>
+    <div id="content">Lag Points: 0</div>
+    <p id="gameStatus">Collect 1000 more lag points to play.</p>
 </body>
 </html>
