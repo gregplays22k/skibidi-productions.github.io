@@ -17,7 +17,7 @@
             text-align: center;
             background-color: #e0f7fa;
             position: sticky;
-            top: 0; /* Adjust to account for the header height */
+            top: 0; /* Changed to 0 to stick to the top */
             z-index: 999;
         }
         nav a {
@@ -101,7 +101,7 @@
                 document.getElementById("gameStatus").innerText = "Game Started! Lag Points are now decreasing.";
                 document.getElementById("gameStatus").onclick = null;
                 document.getElementById("gameStatus").style.cursor = "default";
-                gameInterval = setInterval(decreaseLagPoints, 1000); // Decrease lag points every second in game
+                gameInterval = setInterval(decreaseLagPoints, 500); // Decrease lag points faster in game
             }
         }
 
