@@ -16,7 +16,6 @@
             height: 100vh;
             position: relative;
             background-color: #87ceeb; /* Light blue sky */
-            cursor: crosshair;
         }
         #ui-container {
             position: absolute;
@@ -33,25 +32,26 @@
     <div id="simulation-area"></div>
     <div id="ui-container">
         <p>Resources: Wood <span id="wood-count">100</span>, Stone <span id="stone-count">50</span>, Food <span id="food-count">200</span></p>
-        <button onclick="setBuildingMode()">Create Building</button>
-        <button onclick="setBlockMode()">Create Block</button>
-        <button onclick="createHuman(400, 300)">Create Human</button>
+        <button onclick="setBuildingMode('human')">Create Human</button>
+        <button onclick="setBuildingMode('building')">Create Building</button>
+        <button onclick="setBuildingMode(null)">Select</button>
+        <p id="building-mode">Mode: Select</p>
     </div>
 
     <script>
-        const { Engine, World, Bodies, Composite, Render, Runner, Vector, Events } = Matter;
+        const { Engine, World, Bodies, Composite, Render, Runner, Mouse, MouseConstraint } = Matter;
 
         let engine;
         let world;
         let humans = [];
         let zombies = [];
         let buildings = [];
-        let blocks = [];
         let resources = { wood: 100, stone: 50, food: 200 };
         let gameTime = 0;
         let isNight = false;
-        let buildingMode = false;
-        let blockMode = false;
+        let buildingMode = null;
+        let heldObject = null;
+        let mouseDownTime = 0;
 
         function init() {
             engine = Engine.create();
@@ -77,16 +77,34 @@
 
             setInterval(update, 16);
 
-            Events.on(render.mouse, "mousedown", function(event) {
-                const mouseX = event.mouse.position.x;
-                const mouseY = event.mouse.position.y;
-
-                if (buildingMode) {
-                    createBuilding(mouseX, mouseY);
-                } else if (blockMode) {
-                    createBlock(mouseX, mouseY);
+            const mouse = Mouse.create(render.canvas);
+            const mouseConstraint = MouseConstraint.create(engine, {
+                mouse: mouse,
+                constraint: {
+                    stiffness: 0.2,
+                    render: { visible: false }
                 }
             });
+
+            World.add(world, mouseConstraint);
+
+            render.mouse = mouse;
+
+            Matter.Events.on(mouseConstraint, 'mousedown', (event) => {
+                mouseDownTime = Date.now();
+                heldObject = event.source.body;
+            });
+
+            Matter.Events.on(mouseConstraint, 'mouseup', (event) => {
+                const timeDiff = Date.now() - mouseDownTime;
+                if (timeDiff > 500 && heldObject) {
+                    deleteObject(heldObject);
+                } else if(buildingMode){
+                    placeObject(event.mouse.position.x, event.mouse.position.y);
+                }
+                heldObject = null;
+            });
+
         }
 
         function update() {
@@ -110,6 +128,31 @@
             const simulationArea = document.getElementById('simulation-area');
             simulationArea.style.background = isNight ? '#191970' : '#87ceeb';
         }
+        function setBuildingMode(mode){
+            buildingMode = mode;
+            document.getElementById('building-mode').textContent = `Mode: ${mode ? mode : "Select"}`;
+        }
+        function placeObject(x, y){
+          if(buildingMode === 'human'){
+            createHuman(x,y);
+          } else if (buildingMode === 'building'){
+            createBuilding(x,y);
+          }
+        }
+        function deleteObject(body){
+          if(humans.some(human => human.body === body)){
+            let human = humans.find(h => h.body === body);
+            World.remove(world, body);
+            humans = humans.filter(h => h !== human);
+          } else if (zombies.some(zombie => zombie.body === body)){
+            let zombie = zombies.find(z => z.body === body);
+            World.remove(world, body);
+            zombies = zombies.filter(z => z !== zombie);
+          } else if (buildings.some(building => building === body)){
+            World.remove(world, body);
+            buildings = buildings.filter(b => b !== body);
+          }
+        }
 
         function createHuman(x, y) {
             if (resources.food < 1) { return; }
@@ -123,7 +166,6 @@
                     if (Math.random() < 0.01) {
                         Matter.Body.setVelocity(human.body, { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 });
                     }
-                    climb(human);
                 }
             };
             humans.push(human);
@@ -133,16 +175,9 @@
             if (resources.wood < 10 || resources.stone < 5) { return; }
             resources.wood -= 10;
             resources.stone -= 5;
-            const body = Bodies.rectangle(x, y, 30, 100, { isStatic: true, render: { fillStyle: 'brown' } });
+            const body = Bodies.rectangle(x, y, 50, 50, { isStatic: true, render: { fillStyle: 'brown' } });
             World.add(world, body);
             buildings.push(body);
-        }
-        function createBlock(x,y){
-            if(resources.wood < 5){return;}
-            resources.wood -= 5;
-            const body = Bodies.rectangle(x,y,30,30,{isStatic:true, render:{fillStyle: 'gray'}});
-            World.add(world,body);
-            blocks.push(body);
         }
 
         function spawnZombies() {
@@ -153,17 +188,16 @@
                     let closestHuman = null;
                     let closestDistance = Infinity;
                     humans.forEach(human => {
-                        const distance = Vector.magnitude(Vector.sub(human.body.position, zombie.body.position));
+                        const distance = Matter.Vector.magnitude(Matter.Vector.sub(human.body.position, zombie.body.position));
                         if (distance < closestDistance) {
                             closestDistance = distance;
                             closestHuman = human;
                         }
                     });
                     if (closestHuman) {
-                        const direction = Vector.normalise(Vector.sub(closestHuman.body.position, zombie.body.position));
+                        const direction = Matter.Vector.normalise(Matter.Vector.sub(closestHuman.body.position, zombie.body.position));
                         Matter.Body.setVelocity(zombie.body, { x: direction.x * 2, y: direction.y * 2 });
                     }
-                    climb(zombie);
                 }
             };
             zombies.push(zombie);
@@ -171,7 +205,7 @@
         }
 
         function handleCollisions() {
-            Events.on(engine, 'collisionStart', (event) => {
+            Matter.Events.on(engine, 'collisionStart', (event) => {
                 event.pairs.forEach(pair => {
                     const bodyA = pair.bodyA;
                     const bodyB = pair.bodyB;
@@ -179,37 +213,4 @@
                     if (humans.some(human => human.body === bodyA) && zombies.some(zombie => zombie.body === bodyB)) {
                         handleCombat(bodyA, bodyB);
                     } else if (zombies.some(zombie => zombie.body === bodyA) && humans.some(human => human.body === bodyB)) {
-                        handleCombat(bodyB, bodyA);
-                    }
-                });
-            });
-        }
-
-        function handleCombat(humanBody, zombieBody) {
-            const human = humans.find(h => h.body === humanBody);
-            const zombie = zombies.find(z => z.body === zombieBody);
-            if (human && zombie) {
-                human.health -= 10;
-                zombie.health -= 5;
-                if (human.health <= 0) { World.remove(world, human.body); humans = humans.filter(h => h !== human); }
-                if (zombie.health <= 0) { World.remove(world, zombie.body); zombies = zombies.filter(z => z !== zombie); }
-            }
-        }
-
-        function updateUI() {
-            document.getElementById('wood-count').textContent = resources.wood;
-            document.getElementById('stone-count').textContent = resources.stone;
-            document.getElementById('food-count').textContent = resources.food;
-        }
-
-        function setBuildingMode() {
-            buildingMode = true;
-            blockMode = false;
-        }
-        function setBlockMode(){
-            buildingMode = false;
-            blockMode = true;
-        }
-        function climb(entity){
-            buildings.forEach(building => {
-                if(Vector.magnitude(Vector.sub(entity.body.position,building.position)) < 50 && entity.body.position.y < building.position
+                        handleCombat(bodyB, body
