@@ -1,120 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Three.js Game</title>
-  <style>
-    body { margin: 0; overflow: hidden; }
-    #renderDiv { width: 100vw; height: 100vh; }
-    #ui {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      color: white;
-      font-family: Arial;
-      font-size: 24px;
-    }
-    #gameOverScreen {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: white;
-      font-family: Arial;
-      font-size: 48px;
-      text-align: center;
-    }
-    #playAgainButton {
-      padding: 10px 20px;
-      font-size: 24px;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contraption Masters</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #3366cc;
+            text-align: center;
+        }
+        #blueprint-display, #resource-display, #simulation-area, #crew-display {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .resource-item {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .crew-member {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        #simulation-area {
+            height: 400px;
+            background-color: #e0e0e0;
+            position: relative;
+        }
+        #build-controls button {
+            margin-right: 5px;
+            padding: 5px 10px;
+        }
+        #message-area {
+            margin-top: 10px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+    </style>
 </head>
 <body>
-  <div id="renderDiv"></div>
-  <div id="ui">
-    <span id="scoreDisplay">Score: 0</span>
-    <div id="speedBoostDisplay" style="color: #ffff00; display: none;">SPEED BOOST! </div>
-  </div>
-  <div id="gameOverScreen" style="display: none;">
-    Game Over!<br/>
-    Final Score: <span id="finalScoreDisplay">0</span><br/>
-    <button id="playAgainButton">Play Again</button>
-  </div>
+    <div id="game-container">
+        <h1>Contraption Masters</h1>
 
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.137.5/build/three.module.js';
+        <div id="blueprint-display">
+            <h2>Blueprint:</h2>
+            <p id="blueprint-details">Load a new blueprint...</p>
+        </div>
 
-    const renderDiv = document.getElementById('renderDiv');
-    const scoreDisplay = document.getElementById('scoreDisplay');
-    const finalScoreDisplay = document.getElementById('finalScoreDisplay');
-    const gameOverScreen = document.getElementById('gameOverScreen');
-    const playAgainButton = document.getElementById('playAgainButton');
-    const speedBoostDisplay = document.getElementById('speedBoostDisplay');
+        <div id="resource-display">
+            <h2>Resources:</h2>
+            <div id="resource-list"></div>
+        </div>
 
-    let score = 0;
-    let gameOver = false;
-    let hasSpeedBoost = false;
-    let powerUpTimer = 0;
+        <div id="crew-display">
+            <h2>Crew:</h2>
+            <div id="crew-list"></div>
+        </div>
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+        <div id="build-controls">
+            <button onclick="build('wood')">Build Wood</button>
+            <button onclick="build('steel')">Build Steel</button>
+            <button onclick="simulate()">Simulate</button>
+            <button onclick="newBlueprint()">New Blueprint</button>
+        </div>
 
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderDiv.appendChild(renderer.domElement);
+        <div id="simulation-area">
+            </div>
 
-    const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
-    const player = new THREE.Mesh(playerGeometry, playerMaterial);
-    scene.add(player);
+        <div id="message-area">
+            <p id="message">Welcome to Contraption Masters!</p>
+        </div>
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(0, 0, 5);
-    scene.add(light);
-    const ambientLight = new THREE.AmbientLight(0x404040);
-    scene.add(ambientLight);
+    </div>
 
-    camera.position.z = 10;
+    <script>
+        let resources = { wood: 100, steel: 50 };
+        let crew = [{ name: "Bob", skill: "engineering" }, { name: "Alice", skill: "logistics" }];
+        let currentBlueprint = null;
+        let simulationRunning = false;
 
-    const obstacles = [];
-    const powerUps = [];
+        function updateResources() {
+            let resourceList = document.getElementById("resource-list");
+            resourceList.innerHTML = "";
+            for (let resource in resources) {
+                resourceList.innerHTML += `<span class="resource-item">${resource}: ${resources[resource]}</span>`;
+            }
+        }
 
-    let gameSpeed = 0.1;
-    let baseSpeed = 0.1;
+        function updateCrew() {
+             let crewList = document.getElementById("crew-list");
+             crewList.innerHTML = "";
+             crew.forEach(member => {
+                crewList.innerHTML += `<span class="crew-member">${member.name} (${member.skill})</span>`
+             });
+        }
 
-    scene.background = new THREE.Color(0x000033);
+        function newBlueprint() {
+            // Placeholder: Generate a random blueprint or fetch from a list
+            currentBlueprint = {
+                description: "Build a bridge across a 100-meter gap, supporting a heavy truck.",
+                requirements: { wood: 50, steel: 25 },
+                constraints: { weather: "rain", budget: 150 }
+            };
+            document.getElementById("blueprint-details").textContent = currentBlueprint.description;
+            setMessage(`New Blueprint loaded: ${currentBlueprint.description}`);
+        }
 
-    function createObstacle() {
-      const geometry = new THREE.BoxGeometry(1, 1, 1);
-      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
-      const obstacle = new THREE.Mesh(geometry, material);
+        function build(material) {
+            if (simulationRunning) return;
+            if (resources[material] > 0) {
+                resources[material]--;
+                updateResources();
+                // Add visual representation of building in the simulation area
+                let simulationArea = document.getElementById("simulation-area");
+                let newElement = document.createElement("div");
+                newElement.style.position = "absolute";
+                newElement.style.width = "20px";
+                newElement.style.height = "10px";
+                newElement.style.backgroundColor = material === "wood" ? "brown" : "gray";
+                newElement.style.left = Math.random() * 780 + "px";
+                newElement.style.top = Math.random() * 380 + "px";
+                simulationArea.appendChild(newElement);
+                setMessage(`Built with ${material}.`);
+            } else {
+                setMessage(`Not enough ${material}.`);
+            }
+        }
 
-      obstacle.position.x = Math.random() * 10 - 5;
-      obstacle.position.y = Math.random() * 8 - 4;
-      obstacle.position.z = -20;
+        function simulate() {
+            if (simulationRunning) return;
+            simulationRunning = true;
+            setMessage("Simulating...");
+            // Placeholder: Simulate the bridge's stability and handle failures
+            setTimeout(() => {
+                let success = Math.random() > 0.3; // 70% chance of success for now
+                if (success) {
+                    setMessage("Simulation successful!");
+                } else {
+                    setMessage("Simulation failed! Bridge collapsed.");
+                }
+                simulationRunning = false;
+            }, 2000);
+        }
 
-      scene.add(obstacle);
-      obstacles.push(obstacle);
-    }
+        function setMessage(message) {
+            document.getElementById("message").textContent = message;
+        }
 
-    function createPowerUp() {
-      const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xffff00,
-        emissive: 0xffff00,
-        emissiveIntensity: 0.5
-      });
-      const powerUp = new THREE.Mesh(geometry, material);
+        updateResources();
+        updateCrew();
 
-      powerUp.position.x = Math.random() * 10 - 5;
-      powerUp.position.y = Math.random() * 8 - 4;
-      powerUp.position.z = -20;
-
-      scene.add(powerUp);
-      powerUps.push(powerUp);
-    }
-
-    function checkCollision(obj1, obj2) {
-      const distance = obj1.position.distance
+    </script>
+</body>
+</html>
