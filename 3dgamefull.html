@@ -16,6 +16,7 @@
             height: 100vh;
             position: relative;
             background-color: #87ceeb;
+            overflow: hidden;
         }
         #ui-container {
             position: absolute;
@@ -25,11 +26,25 @@
             padding: 10px;
             border-radius: 5px;
         }
+        .ground {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: brown;
+        }
+        .effect {
+            position: absolute;
+            pointer-events: none;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
 </head>
 <body>
-    <div id="simulation-area"></div>
+    <div id="simulation-area">
+        <div class="ground"></div>
+    </div>
     <div id="ui-container">
         <p>Resources: Wood <span id="wood-count">100</span>, Stone <span id="stone-count">50</span>, Food <span id="food-count">200</span></p>
         <button onclick="setBuildingMode('human')">Create Human</button>
@@ -92,6 +107,7 @@
             setInterval(update, 16);
             setInterval(createResourceBox, 15000);
             setInterval(createAnimal, 10000);
+            setInterval(spawnZombies, 5000);
 
             const mouse = Mouse.create(render.canvas);
             const mouseConstraint = MouseConstraint.create(engine, {
@@ -118,6 +134,7 @@
                     placeObject(event.mouse.position.x, event.mouse.position.y);
                 } else if (event.source.body && event.source.body.resourceType) {
                     resources[event.source.body.resourceType] += event.source.body.resourceAmount;
+                    createEffect(event.mouse.position.x, event.mouse.position.y, 'resource');
                     World.remove(world, event.source.body);
                 } else if (takeoverMode && humans.some(human => human.body === event.source.body)) {
                     controlledHuman = humans.find(human => human.body === event.source.body);
@@ -131,6 +148,14 @@
             document.addEventListener('keyup', (event) => {
                 keys[event.key] = false;
             });
+        }
+
+        function spawnZombies() {
+            for (let i = 0; i < 3; i++) {
+                const x = Math.random() * window.innerWidth;
+                const y = 50;
+                createZombie(x, y);
+            }
         }
 
         function update() {
@@ -190,20 +215,4 @@
                 let human = humans.find(h => h.body === body);
                 World.remove(world, body);
                 humans = humans.filter(h => h !== human);
-            } else if (zombies.some(zombie => zombie.body === body)) {
-                let zombie = zombies.find(z => z.body === body);
-                World.remove(world, body);
-                zombies = zombies.filter(z => z !== zombie);
-            } else if (buildings.some(building => building === body)) {
-                World.remove(world, body);
-                buildings = buildings.filter(b => b !== body);
-            } else if (tanks.some(tank => tank.body === body)) {
-                World.remove(world, body);
-                tanks = tanks.filter(t => t !== tank);
-            }
-        }
-
-        function createHuman(x, y, type) {
-            if (resources.food < 1) { return; }
-            resources.food -= 1;
-            const body = Bodies.circle(x, y, 20,
+            } else if (zombies.some(zombie =>
