@@ -1,0 +1,90 @@
+import random
+import time
+import textwrap
+
+def generate_game(prompt):
+    """Generates a simple text-based game based on a prompt."""
+
+    # Basic game elements (expand as needed)
+    locations = ["a dark forest", "an ancient castle", "a bustling marketplace", "a hidden cave", "a futuristic spaceship"]
+    items = ["a rusty sword", "a magical potion", "a strange artifact", "a glowing crystal", "a data chip"]
+    enemies = ["a goblin", "a dragon", "a rogue AI", "a mysterious shadow", "a giant spider"]
+
+    # Generate game content based on the prompt (very basic for now)
+    location = random.choice(locations)
+    item = random.choice(items)
+    enemy = random.choice(enemies)
+
+    # Create a simple game scenario
+    game_text = f"""
+    You find yourself in {location}. {prompt}
+    You see {item} nearby. Suddenly, {enemy} appears!
+    """
+
+    return game_text, location, item, enemy
+
+def play_game(game_text, location, item, enemy):
+    """Plays the generated game."""
+
+    print("\n" + "=" * 40)
+    print("Game Start!")
+    print("=" * 40 + "\n")
+
+    print(textwrap.fill(game_text, width=70))
+
+    # Simple game loop (expand with more complex logic)
+    while True:
+        action = input("\nWhat do you do? (fight/examine/run/use): ").lower()
+
+        if action == "fight":
+            if random.random() > 0.5:  # 50% chance of success
+                print(f"You defeat the {enemy}!")
+                print("You win!")
+                break
+            else:
+                print(f"The {enemy} defeats you!")
+                print("Game Over!")
+                break
+
+        elif action == "examine":
+            print(f"You examine the {item}. It seems...")
+            if item == "a magical potion":
+                print("to have healing powers.")
+            elif item == "a rusty sword":
+                print("worn and old, but still sharp.")
+            elif item == "a strange artifact":
+                print("to emit a faint hum.")
+            elif item == "a glowing crystal":
+                print("to pulse with inner light.")
+            elif item == "a data chip":
+                print("to contain encrypted information.")
+
+        elif action == "run":
+            print("You run away!")
+            if random.random() > 0.3:
+                print("You escape safely.")
+                break
+            else:
+                print(f"The {enemy} catches you!")
+                print("Game Over!")
+                break
+
+        elif action == "use":
+          if item == "a magical potion":
+            print("You drink the potion and feel a surge of energy.")
+          elif item == "a glowing crystal":
+            print("The crystal emits a blinding flash of light, disorienting the enemy.")
+          elif item == "a data chip":
+            print("You try to interface with the data chip, but you don't have the right equipment.")
+          elif item == "a rusty sword":
+            print("You swing the sword, hoping it will help you in the fight. Consider 'fight' instead.")
+          else:
+            print("You try to use the item, but nothing happens.")
+
+        else:
+            print("Invalid action.")
+
+if __name__ == "__main__":
+    prompt = input("Enter a prompt for your game: ")
+    game_text, location, item, enemy = generate_game(prompt)
+    play_game(game_text, location, item, enemy)
