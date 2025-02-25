@@ -74,3 +74,35 @@ const Game = () => {
         let frameCount = 0;
 
 >>>>>>> updated
+<<<<<<< HEAD
+const container = document.getElementById('renderDiv');
+const root = ReactDOM.createRoot(container);
+root.render(<Game />);
+=======
+        // Initialize game
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('gameContainer').appendChild(renderer.domElement);
+        
+        // Initialize all game objects and variables
+        initGame();
+        
+        // Start animation loop
+        animate();
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        function restartGame() {
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
+>>>>>>> updated
