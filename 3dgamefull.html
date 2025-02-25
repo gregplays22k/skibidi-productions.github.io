@@ -38,6 +38,9 @@
         <button onclick="setBuildingMode('tank')">Create Tank</button>
         <button onclick="setBuildingMode(null)">Select</button>
         <p id="building-mode">Mode: Select</p>
+        <button onclick="toggleFightMode()">Toggle Fight Mode</button>
+        <button onclick="startZombieWar()">Start Zombie War</button>
+        <button onclick="toggleTakeoverMode()">Toggle Takeover Mode</button>
     </div>
 
     <script>
@@ -55,9 +58,13 @@
         let buildingMode = null;
         let heldObject = null;
         let mouseDownTime = 0;
+        let fightMode = false;
+        let zombieSpawnInterval = null;
+        let takeoverMode = false;
+        let controlledHuman = null;
+        let keys = {};
 
         function init() {
-            // ... (Matter.js setup as before) ...
             engine = Engine.create();
             world = engine.world;
 
@@ -77,9 +84,14 @@
             const runner = Runner.create();
             Runner.run(runner, engine);
 
+            const ground = Bodies.rectangle(window.innerWidth / 2, window.innerHeight - 25, window.innerWidth, 50, { isStatic: true, render: { fillStyle: 'brown' } });
+            World.add(world, ground);
+
             createHuman(400, 300, 'normal');
 
             setInterval(update, 16);
+            setInterval(createResourceBox, 15000);
+            setInterval(createAnimal, 10000);
 
             const mouse = Mouse.create(render.canvas);
             const mouseConstraint = MouseConstraint.create(engine, {
@@ -91,7 +103,6 @@
             });
 
             World.add(world, mouseConstraint);
-
             render.mouse = mouse;
 
             Matter.Events.on(mouseConstraint, 'mousedown', (event) => {
@@ -103,118 +114,96 @@
                 const timeDiff = Date.now() - mouseDownTime;
                 if (timeDiff > 500 && heldObject) {
                     deleteObject(heldObject);
-                } else if(buildingMode){
+                } else if (buildingMode) {
                     placeObject(event.mouse.position.x, event.mouse.position.y);
+                } else if (event.source.body && event.source.body.resourceType) {
+                    resources[event.source.body.resourceType] += event.source.body.resourceAmount;
+                    World.remove(world, event.source.body);
+                } else if (takeoverMode && humans.some(human => human.body === event.source.body)) {
+                    controlledHuman = humans.find(human => human.body === event.source.body);
                 }
                 heldObject = null;
             });
 
+            document.addEventListener('keydown', (event) => {
+                keys[event.key] = true;
+            });
+            document.addEventListener('keyup', (event) => {
+                keys[event.key] = false;
+            });
         }
 
         function update() {
-            // ... (update logic as before) ...
             gameTime++;
             if (gameTime % 600 === 0) {
                 isNight = !isNight;
-                if (isNight) {
-                    spawnZombies();
-                }
                 updateBackground();
             }
 
-            humans.forEach(human => human.update());
+            humans.forEach(human => {
+                human.update();
+                if (human.sick && Math.random() < 0.001) {
+                    World.remove(world, human.body);
+                    humans = humans.filter(h => h !== human);
+                }
+            });
             zombies.forEach(zombie => zombie.update());
             tanks.forEach(tank => tank.update());
 
             handleCollisions();
             updateUI();
-        }
 
-        // ... (other functions: updateBackground, setBuildingMode, placeObject, deleteObject) ...
-        function placeObject(x, y){
-            if(buildingMode === 'human'){
-                createHuman(x,y, 'normal');
-            } else if (buildingMode === 'armyHuman'){
-                createHuman(x,y, 'army');
-            } else if (buildingMode === 'building'){
-                createBuilding(x,y);
-            } else if (buildingMode === 'tank'){
-                createTank(x,y);
+            if (controlledHuman) {
+                if (keys['ArrowLeft']) {
+                    Matter.Body.setVelocity(controlledHuman.body, { x: -5, y: controlledHuman.body.velocity.y });
+                }
+                if (keys['ArrowRight']) {
+                    Matter.Body.setVelocity(controlledHuman.body, { x: 5, y: controlledHuman.body.velocity.y });
+                }
             }
         }
+
+        function updateBackground() {
+            const simulationArea = document.getElementById('simulation-area');
+            simulationArea.style.background = isNight ? '#191970' : '#87ceeb';
+        }
+
+        function setBuildingMode(mode) {
+            buildingMode = mode;
+            document.getElementById('building-mode').textContent = `Mode: ${mode ? mode : "Select"}`;
+        }
+
+        function placeObject(x, y) {
+            if (buildingMode === 'human') {
+                createHuman(x, y, 'normal');
+            } else if (buildingMode === 'armyHuman') {
+                createHuman(x, y, 'army');
+            } else if (buildingMode === 'building') {
+                createBuilding(x, y);
+            } else if (buildingMode === 'tank') {
+                createTank(x, y);
+            }
+        }
+
+        function deleteObject(body) {
+            if (humans.some(human => human.body === body)) {
+                let human = humans.find(h => h.body === body);
+                World.remove(world, body);
+                humans = humans.filter(h => h !== human);
+            } else if (zombies.some(zombie => zombie.body === body)) {
+                let zombie = zombies.find(z => z.body === body);
+                World.remove(world, body);
+                zombies = zombies.filter(z => z !== zombie);
+            } else if (buildings.some(building => building === body)) {
+                World.remove(world, body);
+                buildings = buildings.filter(b => b !== body);
+            } else if (tanks.some(tank => tank.body === body)) {
+                World.remove(world, body);
+                tanks = tanks.filter(t => t !== tank);
+            }
+        }
+
         function createHuman(x, y, type) {
             if (resources.food < 1) { return; }
             resources.food -= 1;
-            const body = Bodies.circle(x, y, 20, {render: {fillStyle: type === 'army' ? 'green' : 'white'}});
-            World.add(world, body);
-            const human = {
-                body: body,
-                health: 100,
-                type: type,
-                swordColor: type === 'army' ? 'red' : 'green',
-                attackCooldown: 0,
-                update: () => {
-                    if (Math.random() < 0.01) {
-                        Matter.Body.setVelocity(human.body, { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 });
-                    }
-                    if(human.attackCooldown > 0){
-                        human.attackCooldown--;
-                    }
-                }
-            };
-            humans.push(human);
-        }
-        function createTank(x,y){
-            if (resources.wood < 30 || resources.stone < 20) { return; }
-            resources.wood -= 30;
-            resources.stone -= 20;
-
-            const body = Bodies.rectangle(x, y, 60, 40, { render: { fillStyle: 'gray' } });
-            World.add(world, body);
-            const tank = {
-                body: body,
-                health: 200,
-                attackCooldown: 0,
-                update: () => {
-                    if(tank.attackCooldown > 0){
-                        tank.attackCooldown--;
-                    }
-                    let closestZombie = null;
-                    let closestDistance = Infinity;
-                    zombies.forEach(zombie => {
-                        const distance = Vector.magnitude(Vector.sub(zombie.body.position, tank.body.position));
-                        if (distance < closestDistance) {
-                            closestDistance = distance;
-                            closestZombie = zombie;
-                        }
-                    });
-                    if (closestZombie && tank.attackCooldown === 0) {
-                        handleTankAttack(tank, closestZombie);
-                        tank.attackCooldown = 50;
-                    }
-
-                }
-            };
-            tanks.push(tank);
-        }
-        function handleTankAttack(tank, zombie){
-            zombie.health -= 30;
-            if(zombie.health <= 0){
-                World.remove(world, zombie.body);
-                zombies = zombies.filter(z => z !== zombie);
-            }
-        }
-        // ... (createBuilding, spawnZombies, handleCollisions, handleCombat, updateUI) ...
-        function handleCombat(humanBody, zombieBody){
-            const human = humans.find(h => h.body === humanBody);
-            const zombie = zombies.find(z => z.body === zombieBody);
-            if (human && zombie && human.attackCooldown === 0){
-                let damage = human.type === 'army' ? 20 : 10;
-                zombie.health -= damage;
-                human.attackCooldown = 20;
-                if(zombie.health <= 0){World.remove(world,zombie.body); zombies = zombies.filter(z => z !== zombie);}
-            }
-        }
-    </script>
-</body>
-</html>
+            const body = Bodies.circle(x, y, 20,
