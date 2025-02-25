@@ -3,169 +3,178 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contraption Masters</title>
+    <title>Civilization vs. Zombies</title>
     <style>
         body {
             font-family: sans-serif;
-            margin: 20px;
-            background-color: #f0f0f0;
-        }
-        #game-container {
-            width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #3366cc;
-            text-align: center;
-        }
-        #blueprint-display, #resource-display, #simulation-area, #crew-display {
-            border: 1px solid #ddd;
-            padding: 10px;
-            margin-bottom: 15px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-        }
-        .resource-item {
-            display: inline-block;
-            margin-right: 10px;
-        }
-        .crew-member {
-            display: inline-block;
-            margin-right: 10px;
+            margin: 0;
+            overflow: hidden;
+            background-color: #e0e0e0;
         }
         #simulation-area {
-            height: 400px;
-            background-color: #e0e0e0;
+            width: 100vw;
+            height: 100vh;
             position: relative;
+            background-color: #87ceeb; /* Light blue sky */
         }
-        #build-controls button {
-            margin-right: 5px;
-            padding: 5px 10px;
-        }
-        #message-area {
-            margin-top: 10px;
-            padding: 5px;
-            border: 1px solid #ddd;
-            background-color: white;
+        #ui-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
 </head>
 <body>
-    <div id="game-container">
-        <h1>Contraption Masters</h1>
-
-        <div id="blueprint-display">
-            <h2>Blueprint:</h2>
-            <p id="blueprint-details">Load a new blueprint...</p>
-        </div>
-
-        <div id="resource-display">
-            <h2>Resources:</h2>
-            <div id="resource-list"></div>
-        </div>
-
-        <div id="crew-display">
-            <h2>Crew:</h2>
-            <div id="crew-list"></div>
-        </div>
-
-        <div id="build-controls">
-            <button onclick="build('wood')">Build Wood</button>
-            <button onclick="build('steel')">Build Steel</button>
-            <button onclick="simulate()">Simulate</button>
-            <button onclick="newBlueprint()">New Blueprint</button>
-        </div>
-
-        <div id="simulation-area">
-            </div>
-
-        <div id="message-area">
-            <p id="message">Welcome to Contraption Masters!</p>
-        </div>
-
+    <div id="simulation-area"></div>
+    <div id="ui-container">
+        <p>Resources: Wood <span id="wood-count">100</span>, Stone <span id="stone-count">50</span>, Food <span id="food-count">200</span></p>
+        <button onclick="createHuman(400, 300)">Create Human</button>
+        <button onclick="createBuilding(400,400)">Create Building</button>
     </div>
 
     <script>
-        let resources = { wood: 100, steel: 50 };
-        let crew = [{ name: "Bob", skill: "engineering" }, { name: "Alice", skill: "logistics" }];
-        let currentBlueprint = null;
-        let simulationRunning = false;
+        const { Engine, World, Bodies, Composite, Render, Runner } = Matter;
 
-        function updateResources() {
-            let resourceList = document.getElementById("resource-list");
-            resourceList.innerHTML = "";
-            for (let resource in resources) {
-                resourceList.innerHTML += `<span class="resource-item">${resource}: ${resources[resource]}</span>`;
-            }
-        }
+        let engine;
+        let world;
+        let humans = [];
+        let zombies = [];
+        let buildings = [];
+        let resources = { wood: 100, stone: 50, food: 200 };
+        let gameTime = 0;
+        let isNight = false;
 
-        function updateCrew() {
-             let crewList = document.getElementById("crew-list");
-             crewList.innerHTML = "";
-             crew.forEach(member => {
-                crewList.innerHTML += `<span class="crew-member">${member.name} (${member.skill})</span>`
-             });
-        }
+        function init() {
+            engine = Engine.create();
+            world = engine.world;
 
-        function newBlueprint() {
-            // Placeholder: Generate a random blueprint or fetch from a list
-            currentBlueprint = {
-                description: "Build a bridge across a 100-meter gap, supporting a heavy truck.",
-                requirements: { wood: 50, steel: 25 },
-                constraints: { weather: "rain", budget: 150 }
-            };
-            document.getElementById("blueprint-details").textContent = currentBlueprint.description;
-            setMessage(`New Blueprint loaded: ${currentBlueprint.description}`);
-        }
-
-        function build(material) {
-            if (simulationRunning) return;
-            if (resources[material] > 0) {
-                resources[material]--;
-                updateResources();
-                // Add visual representation of building in the simulation area
-                let simulationArea = document.getElementById("simulation-area");
-                let newElement = document.createElement("div");
-                newElement.style.position = "absolute";
-                newElement.style.width = "20px";
-                newElement.style.height = "10px";
-                newElement.style.backgroundColor = material === "wood" ? "brown" : "gray";
-                newElement.style.left = Math.random() * 780 + "px";
-                newElement.style.top = Math.random() * 380 + "px";
-                simulationArea.appendChild(newElement);
-                setMessage(`Built with ${material}.`);
-            } else {
-                setMessage(`Not enough ${material}.`);
-            }
-        }
-
-        function simulate() {
-            if (simulationRunning) return;
-            simulationRunning = true;
-            setMessage("Simulating...");
-            // Placeholder: Simulate the bridge's stability and handle failures
-            setTimeout(() => {
-                let success = Math.random() > 0.3; // 70% chance of success for now
-                if (success) {
-                    setMessage("Simulation successful!");
-                } else {
-                    setMessage("Simulation failed! Bridge collapsed.");
+            const render = Render.create({
+                element: document.getElementById('simulation-area'),
+                engine: engine,
+                options: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    wireframes: false,
+                    background: '#87ceeb'
                 }
-                simulationRunning = false;
-            }, 2000);
+            });
+
+            Render.run(render);
+
+            const runner = Runner.create();
+            Runner.run(runner, engine);
+
+            createHuman(400, 300);
+
+            setInterval(update, 16);
         }
 
-        function setMessage(message) {
-            document.getElementById("message").textContent = message;
+        function update() {
+            gameTime++;
+            if (gameTime % 600 === 0) {
+                isNight = !isNight;
+                if (isNight) {
+                    spawnZombies();
+                }
+                updateBackground();
+            }
+
+            humans.forEach(human => human.update());
+            zombies.forEach(zombie => zombie.update());
+
+            handleCollisions();
+            updateUI();
+        }
+        function updateBackground(){
+          const simulationArea = document.getElementById('simulation-area');
+          simulationArea.style.background = isNight ? '#191970' : '#87ceeb';
         }
 
-        updateResources();
-        updateCrew();
+        function createHuman(x, y) {
+            if(resources.food < 1){return;}
+            resources.food -= 1;
+            const body = Bodies.circle(x, y, 20);
+            World.add(world, body);
+            const human = {
+                body: body,
+                health: 100,
+                update: () => {
+                   if(Math.random() < 0.01){
+                     Matter.Body.setVelocity(human.body, {x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 });
+                   }
+                }
+            };
+            humans.push(human);
+        }
+        function createBuilding(x,y){
+          if(resources.wood < 10 || resources.stone < 5){return;}
+          resources.wood -= 10;
+          resources.stone -= 5;
+          const body = Bodies.rectangle(x, y, 50, 50, { isStatic: true, render: {fillStyle: 'brown'}});
+          World.add(world,body);
+          buildings.push(body);
+        }
 
+        function spawnZombies() {
+            const zombie = {
+                body: Bodies.rectangle(Math.random() * window.innerWidth, 0, 30, 30, {render:{fillStyle: 'green'}}),
+                health: 50,
+                update: () => {
+                    let closestHuman = null;
+                    let closestDistance = Infinity;
+                    humans.forEach(human => {
+                        const distance = Matter.Vector.magnitude(Matter.Vector.sub(human.body.position, zombie.body.position));
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestHuman = human;
+                        }
+                    });
+                    if (closestHuman) {
+                        const direction = Matter.Vector.normalise(Matter.Vector.sub(closestHuman.body.position, zombie.body.position));
+                        Matter.Body.setVelocity(zombie.body, { x: direction.x * 2, y: direction.y * 2 });
+                    }
+                }
+            };
+            zombies.push(zombie);
+            World.add(world, zombie.body);
+        }
+
+        function handleCollisions() {
+            Matter.Events.on(engine, 'collisionStart', (event) => {
+                event.pairs.forEach(pair => {
+                    const bodyA = pair.bodyA;
+                    const bodyB = pair.bodyB;
+
+                    if (humans.some(human => human.body === bodyA) && zombies.some(zombie => zombie.body === bodyB)) {
+                        handleCombat(bodyA, bodyB);
+                    } else if (zombies.some(zombie => zombie.body === bodyA) && humans.some(human => human.body === bodyB)) {
+                        handleCombat(bodyB, bodyA);
+                    }
+                });
+            });
+        }
+        function handleCombat(humanBody, zombieBody){
+          const human = humans.find(h => h.body === humanBody);
+          const zombie = zombies.find(z => z.body === zombieBody);
+          if (human && zombie){
+            human.health -= 10;
+            zombie.health -= 5;
+            if(human.health <= 0){World.remove(world,human.body); humans = humans.filter(h => h !== human);}
+            if(zombie.health <= 0){World.remove(world,zombie.body); zombies = zombies.filter(z => z !== zombie);}
+          }
+        }
+
+        function updateUI() {
+            document.getElementById('wood-count').textContent = resources.wood;
+            document.getElementById('stone-count').textContent = resources.stone;
+            document.getElementById('food-count').textContent = resources.food;
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
