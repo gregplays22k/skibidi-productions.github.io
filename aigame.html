@@ -40,6 +40,15 @@
             bottom: 20px;
             left: 200px;
         }
+        #code-output {
+            width: 98%;
+            height: 200px;
+            margin-top: 10px;
+            background-color: #e0e0e0;
+            overflow: auto;
+            white-space: pre;
+            font-family: monospace;
+        }
         textarea {
             width: 98%;
             height: 100px;
@@ -73,13 +82,14 @@
 <body>
     <h1>AI Game Generator</h1>
     <textarea id="prompt-input" placeholder="Enter your game prompt..."></textarea>
-    <button onclick="generateAndPlay()">What do you want me to generate</button>
+    <button onclick="generateAndPlay()">Generate & Play</button>
     <div id="game-container">
         <div id="player"></div>
         <div id="enemy"></div>
         <div id="item"></div>
     </div>
     <div id="game-output"></div>
+    <div id="code-output"></div>
 
     <script>
         function generateAndPlay() {
@@ -89,6 +99,7 @@
             const enemy = document.getElementById("enemy");
             const item = document.getElementById("item");
             const gameOutput = document.getElementById("game-output");
+            const codeOutput = document.getElementById("code-output");
 
             // Basic game elements
             const locations = ["a dark forest", "an ancient castle", "a bustling marketplace", "a hidden cave", "a futuristic spaceship"];
@@ -164,7 +175,65 @@
                     actionInput.value = "";
                 }
             };
-        }
-    </script>
-</body>
-</html>
+
+            // Display the generated code
+            const generatedCode = `
+            // Basic game elements
+            const locations = ${JSON.stringify(locations)};
+            const items = ${JSON.stringify(items)};
+            const enemies = ${JSON.stringify(enemies)};
+
+            // Generate game content
+            const location = locations[Math.floor(Math.random() * locations.length)];
+            const itemType = items[Math.floor(Math.random() * items.length)];
+            const enemyType = enemies[Math.floor(Math.random() * enemies.length)];
+
+            // Set visual elements based on generated content
+            if (location.includes("forest")) {
+                gameContainer.style.backgroundColor = "green";
+            } else if (location.includes("castle")) {
+                gameContainer.style.backgroundColor = "gray";
+            } else if (location.includes("marketplace")) {
+                gameContainer.style.backgroundColor = "orange";
+            } else if (location.includes("cave")) {
+                gameContainer.style.backgroundColor = "darkgray";
+            } else if (location.includes("spaceship")) {
+                gameContainer.style.backgroundColor = "darkblue";
+            }
+
+            // Random item position
+            item.style.left = Math.random() * (gameContainer.offsetWidth - 20) + "px";
+
+            // Create game scenario
+            const gameText = 'You find yourself in ' + location + '. ' + prompt + '<br>You see ' + itemType + ' nearby. Suddenly, ' + enemyType + ' appears!';
+            gameOutput.innerHTML = gameText;
+
+            let actionPrompt = '<br>What do you do? (fight/examine/run/use): ';
+            gameOutput.innerHTML += actionPrompt;
+
+            const actionInput = document.createElement('input');
+            actionInput.type = 'text';
+            gameOutput.appendChild(actionInput);
+
+            const actionButton = document.createElement('button');
+            actionButton.textContent = 'Enter';
+            gameOutput.appendChild(actionButton);
+
+            actionButton.onclick = function() {
+                const action = actionInput.value.toLowerCase();
+                let output = '';
+
+                if (action === 'fight') {
+                    if (Math.random() > 0.5) {
+                        output = 'You defeat the ' + enemyType + '!<br>You win!';
+                    } else {
+                        output = 'The ' + enemyType + ' defeats you!<br>Game Over!';
+                    }
+                } else if (action === 'examine') {
+                    output = 'You examine the ' + itemType + '. It seems...';
+                    if (itemType === 'a magical potion') {
+                        output += 'to have healing powers.';
+                    }
+                } else if (action === 'run') {
+                    // ... (run logic)
+                } else if (action === '
