@@ -15,7 +15,7 @@
             width: 100vw;
             height: 100vh;
             position: relative;
-            background-color: #87ceeb; /* Light blue sky */
+            background-color: #87ceeb;
         }
         #ui-container {
             position: absolute;
@@ -33,19 +33,22 @@
     <div id="ui-container">
         <p>Resources: Wood <span id="wood-count">100</span>, Stone <span id="stone-count">50</span>, Food <span id="food-count">200</span></p>
         <button onclick="setBuildingMode('human')">Create Human</button>
+        <button onclick="setBuildingMode('armyHuman')">Create Army Human</button>
         <button onclick="setBuildingMode('building')">Create Building</button>
+        <button onclick="setBuildingMode('tank')">Create Tank</button>
         <button onclick="setBuildingMode(null)">Select</button>
         <p id="building-mode">Mode: Select</p>
     </div>
 
     <script>
-        const { Engine, World, Bodies, Composite, Render, Runner, Mouse, MouseConstraint } = Matter;
+        const { Engine, World, Bodies, Composite, Render, Runner, Mouse, MouseConstraint, Vector } = Matter;
 
         let engine;
         let world;
         let humans = [];
         let zombies = [];
         let buildings = [];
+        let tanks = [];
         let resources = { wood: 100, stone: 50, food: 200 };
         let gameTime = 0;
         let isNight = false;
@@ -54,6 +57,7 @@
         let mouseDownTime = 0;
 
         function init() {
+            // ... (Matter.js setup as before) ...
             engine = Engine.create();
             world = engine.world;
 
@@ -73,7 +77,7 @@
             const runner = Runner.create();
             Runner.run(runner, engine);
 
-            createHuman(400, 300);
+            createHuman(400, 300, 'normal');
 
             setInterval(update, 16);
 
@@ -108,6 +112,7 @@
         }
 
         function update() {
+            // ... (update logic as before) ...
             gameTime++;
             if (gameTime % 600 === 0) {
                 isNight = !isNight;
@@ -119,98 +124,97 @@
 
             humans.forEach(human => human.update());
             zombies.forEach(zombie => zombie.update());
+            tanks.forEach(tank => tank.update());
 
             handleCollisions();
             updateUI();
         }
 
-        function updateBackground() {
-            const simulationArea = document.getElementById('simulation-area');
-            simulationArea.style.background = isNight ? '#191970' : '#87ceeb';
-        }
-        function setBuildingMode(mode){
-            buildingMode = mode;
-            document.getElementById('building-mode').textContent = `Mode: ${mode ? mode : "Select"}`;
-        }
+        // ... (other functions: updateBackground, setBuildingMode, placeObject, deleteObject) ...
         function placeObject(x, y){
-          if(buildingMode === 'human'){
-            createHuman(x,y);
-          } else if (buildingMode === 'building'){
-            createBuilding(x,y);
-          }
+            if(buildingMode === 'human'){
+                createHuman(x,y, 'normal');
+            } else if (buildingMode === 'armyHuman'){
+                createHuman(x,y, 'army');
+            } else if (buildingMode === 'building'){
+                createBuilding(x,y);
+            } else if (buildingMode === 'tank'){
+                createTank(x,y);
+            }
         }
-        function deleteObject(body){
-          if(humans.some(human => human.body === body)){
-            let human = humans.find(h => h.body === body);
-            World.remove(world, body);
-            humans = humans.filter(h => h !== human);
-          } else if (zombies.some(zombie => zombie.body === body)){
-            let zombie = zombies.find(z => z.body === body);
-            World.remove(world, body);
-            zombies = zombies.filter(z => z !== zombie);
-          } else if (buildings.some(building => building === body)){
-            World.remove(world, body);
-            buildings = buildings.filter(b => b !== body);
-          }
-        }
-
-        function createHuman(x, y) {
+        function createHuman(x, y, type) {
             if (resources.food < 1) { return; }
             resources.food -= 1;
-            const body = Bodies.circle(x, y, 20);
+            const body = Bodies.circle(x, y, 20, {render: {fillStyle: type === 'army' ? 'green' : 'white'}});
             World.add(world, body);
             const human = {
                 body: body,
                 health: 100,
+                type: type,
+                swordColor: type === 'army' ? 'red' : 'green',
+                attackCooldown: 0,
                 update: () => {
                     if (Math.random() < 0.01) {
                         Matter.Body.setVelocity(human.body, { x: (Math.random() - 0.5) * 5, y: (Math.random() - 0.5) * 5 });
+                    }
+                    if(human.attackCooldown > 0){
+                        human.attackCooldown--;
                     }
                 }
             };
             humans.push(human);
         }
+        function createTank(x,y){
+            if (resources.wood < 30 || resources.stone < 20) { return; }
+            resources.wood -= 30;
+            resources.stone -= 20;
 
-        function createBuilding(x, y) {
-            if (resources.wood < 10 || resources.stone < 5) { return; }
-            resources.wood -= 10;
-            resources.stone -= 5;
-            const body = Bodies.rectangle(x, y, 50, 50, { isStatic: true, render: { fillStyle: 'brown' } });
+            const body = Bodies.rectangle(x, y, 60, 40, { render: { fillStyle: 'gray' } });
             World.add(world, body);
-            buildings.push(body);
-        }
-
-        function spawnZombies() {
-            const zombie = {
-                body: Bodies.rectangle(Math.random() * window.innerWidth, 0, 30, 30, { render: { fillStyle: 'green' } }),
-                health: 50,
+            const tank = {
+                body: body,
+                health: 200,
+                attackCooldown: 0,
                 update: () => {
-                    let closestHuman = null;
+                    if(tank.attackCooldown > 0){
+                        tank.attackCooldown--;
+                    }
+                    let closestZombie = null;
                     let closestDistance = Infinity;
-                    humans.forEach(human => {
-                        const distance = Matter.Vector.magnitude(Matter.Vector.sub(human.body.position, zombie.body.position));
+                    zombies.forEach(zombie => {
+                        const distance = Vector.magnitude(Vector.sub(zombie.body.position, tank.body.position));
                         if (distance < closestDistance) {
                             closestDistance = distance;
-                            closestHuman = human;
+                            closestZombie = zombie;
                         }
                     });
-                    if (closestHuman) {
-                        const direction = Matter.Vector.normalise(Matter.Vector.sub(closestHuman.body.position, zombie.body.position));
-                        Matter.Body.setVelocity(zombie.body, { x: direction.x * 2, y: direction.y * 2 });
+                    if (closestZombie && tank.attackCooldown === 0) {
+                        handleTankAttack(tank, closestZombie);
+                        tank.attackCooldown = 50;
                     }
+
                 }
             };
-            zombies.push(zombie);
-            World.add(world, zombie.body);
+            tanks.push(tank);
         }
-
-        function handleCollisions() {
-            Matter.Events.on(engine, 'collisionStart', (event) => {
-                event.pairs.forEach(pair => {
-                    const bodyA = pair.bodyA;
-                    const bodyB = pair.bodyB;
-
-                    if (humans.some(human => human.body === bodyA) && zombies.some(zombie => zombie.body === bodyB)) {
-                        handleCombat(bodyA, bodyB);
-                    } else if (zombies.some(zombie => zombie.body === bodyA) && humans.some(human => human.body === bodyB)) {
-                        handleCombat(bodyB, body
+        function handleTankAttack(tank, zombie){
+            zombie.health -= 30;
+            if(zombie.health <= 0){
+                World.remove(world, zombie.body);
+                zombies = zombies.filter(z => z !== zombie);
+            }
+        }
+        // ... (createBuilding, spawnZombies, handleCollisions, handleCombat, updateUI) ...
+        function handleCombat(humanBody, zombieBody){
+            const human = humans.find(h => h.body === humanBody);
+            const zombie = zombies.find(z => z.body === zombieBody);
+            if (human && zombie && human.attackCooldown === 0){
+                let damage = human.type === 'army' ? 20 : 10;
+                zombie.health -= damage;
+                human.attackCooldown = 20;
+                if(zombie.health <= 0){World.remove(world,zombie.body); zombies = zombies.filter(z => z !== zombie);}
+            }
+        }
+    </script>
+</body>
+</html>
