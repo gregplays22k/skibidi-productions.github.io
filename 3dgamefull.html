@@ -1,108 +1,226 @@
-<<<<<<< HEAD
-import React, { useRef, useEffect, useState } from 'react';
-import ReactDOM from 'react-dom/client';
-import * as THREE from 'three';
-
-const Game = () => {
-=======
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Runner Game</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.147.0/three.min.js"></script>
-    <style>
-        body { 
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        #gameContainer {
-            position: relative;
-        }
-        #scoreDisplay {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            font-family: Arial;
-            font-size: 24px;
-        }
-        #speedBoost {
-            color: #ffff00;
-        }
-        #gameOver {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-family: Arial;
-            font-size: 48px;
-            text-align: center;
-            display: none;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 24px;
-            margin-top: 20px;
-            cursor: pointer;
-        }
-    </style>
+  <title>Three.js Game</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #renderDiv { width: 100vw; height: 100vh; }
+    #ui {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      color: white;
+      font-family: Arial;
+      font-size: 24px;
+    }
+    #gameOverScreen {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-family: Arial;
+      font-size: 48px;
+      text-align: center;
+    }
+    #playAgainButton {
+      padding: 10px 20px;
+      font-size: 24px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <div id="scoreDisplay">
-            Score: <span id="score">0</span>
-            <div id="speedBoost" style="display: none">
-                SPEED BOOST! <span id="boostTimer">5</span>s
-            </div>
-        </div>
-        <div id="gameOver">
-            Game Over!<br/>
-            Final Score: <span id="finalScore">0</span><br/>
-            <button onclick="restartGame()">Play Again</button>
-        </div>
-    </div>
+  <div id="renderDiv"></div>
+  <div id="ui">
+    <span id="scoreDisplay">Score: 0</span>
+    <div id="speedBoostDisplay" style="color: #ffff00; display: none;">SPEED BOOST! </div>
+  </div>
+  <div id="gameOverScreen" style="display: none;">
+    Game Over!<br/>
+    Final Score: <span id="finalScoreDisplay">0</span><br/>
+    <button id="playAgainButton">Play Again</button>
+  </div>
 
-    <script>
-        let score = 0;
-        let gameOver = false;
-        let hasSpeedBoost = false;
-        let powerUpTimer = 0;
-        let frameCount = 0;
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.137.5/build/three.module.js';
 
->>>>>>> updated
-<<<<<<< HEAD
-const container = document.getElementById('renderDiv');
-const root = ReactDOM.createRoot(container);
-root.render(<Game />);
-=======
-        // Initialize game
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('gameContainer').appendChild(renderer.domElement);
-        
-        // Initialize all game objects and variables
-        initGame();
-        
-        // Start animation loop
-        animate();
-        
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-        
-        function restartGame() {
-            window.location.reload();
+    const renderDiv = document.getElementById('renderDiv');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const playAgainButton = document.getElementById('playAgainButton');
+    const speedBoostDisplay = document.getElementById('speedBoostDisplay');
+
+    let score = 0;
+    let gameOver = false;
+    let hasSpeedBoost = false;
+    let powerUpTimer = 0;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderDiv.appendChild(renderer.domElement);
+
+    const playerGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+    const player = new THREE.Mesh(playerGeometry, playerMaterial);
+    scene.add(player);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(0, 0, 5);
+    scene.add(light);
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    camera.position.z = 10;
+
+    const obstacles = [];
+    const powerUps = [];
+
+    let gameSpeed = 0.1;
+    let baseSpeed = 0.1;
+
+    scene.background = new THREE.Color(0x000033);
+
+    function createObstacle() {
+      const geometry = new THREE.BoxGeometry(1, 1, 1);
+      const material = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+      const obstacle = new THREE.Mesh(geometry, material);
+
+      obstacle.position.x = Math.random() * 10 - 5;
+      obstacle.position.y = Math.random() * 8 - 4;
+      obstacle.position.z = -20;
+
+      scene.add(obstacle);
+      obstacles.push(obstacle);
+    }
+
+    function createPowerUp() {
+      const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xffff00,
+        emissive: 0xffff00,
+        emissiveIntensity: 0.5
+      });
+      const powerUp = new THREE.Mesh(geometry, material);
+
+      powerUp.position.x = Math.random() * 10 - 5;
+      powerUp.position.y = Math.random() * 8 - 4;
+      powerUp.position.z = -20;
+
+      scene.add(powerUp);
+      powerUps.push(powerUp);
+    }
+
+    function checkCollision(obj1, obj2) {
+      const distance = obj1.position.distanceTo(obj2.position);
+      return distance < 1.5;
+    }
+
+    const keys = { left: false, right: false, up: false, down: false };
+
+    window.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'a':
+          keys.left = true;
+          break;
+        case 'ArrowRight':
+        case 'd':
+          keys.right = true;
+          break;
+        case 'ArrowUp':
+        case 'w':
+          keys.up = true;
+          break;
+        case 'ArrowDown':
+        case 's':
+          keys.down = true;
+          break;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      switch (e.key) {
+        case 'ArrowLeft':
+        case 'a':
+          keys.left = false;
+          break;
+        case 'ArrowRight':
+        case 'd':
+          keys.right = false;
+          break;
+        case 'ArrowUp':
+        case 'w':
+          keys.up = false;
+          break;
+        case 'ArrowDown':
+        case 's':
+          keys.down = false;
+          break;
+      }
+    });
+
+    let frameCount = 0;
+    function animate() {
+      if (!gameOver) {
+        requestAnimationFrame(animate);
+
+        player.rotation.x += 0.01;
+        player.rotation.y += 0.01;
+
+        if (keys.left && player.position.x > -5) player.position.x -= 0.1;
+        if (keys.right && player.position.x < 5) player.position.x += 0.1;
+        if (keys.up && player.position.y < 4) player.position.y += 0.1;
+        if (keys.down && player.position.y > -4) player.position.y -= 0.1;
+
+        frameCount++;
+        if (frameCount % 60 === 0) {
+          createObstacle();
+          score++;
+          scoreDisplay.textContent = `Score: ${score}`;
         }
-    </script>
-</body>
-</html>
->>>>>>> updated
+
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+          obstacles[i].position.z += gameSpeed;
+          obstacles[i].rotation.x += 0.02;
+          obstacles[i].rotation.z += 0.02;
+
+          if (checkCollision(player, obstacles[i])) {
+            gameOver = true;
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'block';
+          }
+
+          if (obstacles[i].position.z > 5) {
+            scene.remove(obstacles[i]);
+            obstacles.splice(i, 1);
+          }
+        }
+
+        for (let i = powerUps.length - 1; i >= 0; i--) {
+          powerUps[i].position.z += gameSpeed;
+          powerUps[i].rotation.y += 0.05;
+
+          if (checkCollision(player, powerUps[i])) {
+            scene.remove(powerUps[i]);
+            powerUps.splice(i, 1);
+            hasSpeedBoost = true;
+            powerUpTimer = 300;
+            gameSpeed = baseSpeed * 2;
+            speedBoostDisplay.style.display = 'inline';
+          }
+
+          if (powerUps[i] && powerUps[i].position.z > 5) {
+            scene.remove(powerUps[i]);
+            powerUps.splice(i, 1);
+          }
+        }
+
+        if (powerUpTimer > 0) {
+          powerUpTimer--;
+          speedBoostDisplay.textContent = `SPEED BOOST!
