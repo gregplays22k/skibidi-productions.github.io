@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Game Generator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+        #game-output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        textarea {
+            width: 98%;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Game Generator</h1>
+    <textarea id="prompt-input" placeholder="Enter your game prompt..."></textarea>
+    <button onclick="generateAndPlay()">Generate and Play</button>
+    <div id="game-output"></div>
+
+    <script>
+        function generateAndPlay() {
+            const prompt = document.getElementById("prompt-input").value;
+            const gameOutput = document.getElementById("game-output");
+
+            // Basic game elements (expand as needed)
+            const locations = ["a dark forest", "an ancient castle", "a bustling marketplace", "a hidden cave", "a futuristic spaceship"];
+            const items = ["a rusty sword", "a magical potion", "a strange artifact", "a glowing crystal", "a data chip"];
+            const enemies = ["a goblin", "a dragon", "a rogue AI", "a mysterious shadow", "a giant spider"];
+
+            // Generate game content based on the prompt (very basic for now)
+            const location = locations[Math.floor(Math.random() * locations.length)];
+            const item = items[Math.floor(Math.random() * items.length)];
+            const enemy = enemies[Math.floor(Math.random() * enemies.length)];
+
+            // Create a simple game scenario
+            const gameText = `
+                You find yourself in ${location}. ${prompt}
+                You see ${item} nearby. Suddenly, ${enemy} appears!
+            `;
+
+            gameOutput.innerHTML = `<pre>${gameText}</pre>`;
+
+            let actionPrompt = `\nWhat do you do? (fight/examine/run/use): `;
+            gameOutput.innerHTML += actionPrompt;
+
+            const actionInput = document.createElement("input");
+            actionInput.type = "text";
+            gameOutput.appendChild(actionInput);
+
+            const actionButton = document.createElement("button");
+            actionButton.textContent = "Enter";
+            gameOutput.appendChild(actionButton);
+
+            actionButton.onclick = function() {
+                const action = actionInput.value.toLowerCase();
+                let output = "";
+
+                if (action === "fight") {
+                    if (Math.random() > 0.5) {
+                        output = `You defeat the ${enemy}!\nYou win!`;
+                    } else {
+                        output = `The ${enemy} defeats you!\nGame Over!`;
+                    }
+                } else if (action === "examine") {
+                    output = `You examine the ${item}. It seems...`;
+                    if (item === "a magical potion") {
+                        output += "to have healing powers.";
+                    } else if (item === "a rusty sword") {
+                        output += "worn and old, but still sharp.";
+                    } else if (item === "a strange artifact") {
+                        output += "to emit a faint hum.";
+                    } else if (item === "a glowing crystal") {
+                        output += "to pulse with inner light.";
+                    } else if (item === "a data chip") {
+                        output += "to contain encrypted information.";
+                    }
+                } else if (action === "run") {
+                    output = "You run away!";
+                    if (Math.random() > 0.3) {
+                        output += "You escape safely.";
+                    } else {
+                        output += `The ${enemy} catches you!\nGame Over!`;
+                    }
+                } else if (action === "use") {
+                    if (item === "a magical potion") {
+                        output = "You drink the potion and feel a surge of energy.";
+                    } else if (item === "a glowing crystal") {
+                        output = "The crystal emits a blinding flash of light, disorienting the enemy.";
+                    } else if (item === "a data chip") {
+                        output = "You try to interface with the data chip, but you don't have the right equipment.";
+                    } else if (item === "a rusty sword") {
+                        output = "You swing the sword, hoping it will help you in the fight. Consider 'fight' instead.";
+                    } else {
+                        output = "You try to use the item, but nothing happens.";
+                    }
+                } else {
+                    output = "Invalid action.";
+                }
+
+                gameOutput.innerHTML += `<br>${actionPrompt}${action}<br>${output}`;
+
+                if (output.includes("Game Over") || output.includes("You win!")){
+                  actionInput.disabled = true;
+                  actionButton.disabled = true;
+                } else {
+                  gameOutput.innerHTML += `<br>${actionPrompt}`;
+                  actionInput.value = "";
+                }
+            };
+        }
+    </script>
+</body>
+</html>
